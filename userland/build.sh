@@ -551,13 +551,22 @@ if [ -d ../fw-gpu ]; then
 fi
 # A missing piece is otherwise silent until the phone. Citrus: a610_zap.mdt without a630_sqe.fw
 # (a630_sqe.fw is not on the POCO M3's vendor image). Either phone: neither a660_gmu.bin nor
-# a610_zap.mdt means gpu=1 will not start.
+# a610_zap.mdt means gpu=1 will not start. A complete set is named so the person who is about
+# to boot gpu=1 knows which GPU path they paid for: a660_gmu.bin is redwood, a610_zap.mdt plus
+# a630_sqe.fw is citrus.
 if [ -f ../fw-gpu/a610_zap.mdt ] && [ ! -f ../fw-gpu/a630_sqe.fw ]; then
 	echo "build.sh: citrus GPU firmware is incomplete: ../fw-gpu has a610_zap.mdt but no a630_sqe.fw"
 	echo "build.sh: gpu=1 on citrus needs both; a630_sqe.fw is not on the phone's /vendor/firmware (linux-firmware qcom/a630_sqe.fw)"
+	echo "build.sh: citrus gpu=1 will not start"
 fi
 if [ ! -f ../fw-gpu/a660_gmu.bin ] && [ ! -f ../fw-gpu/a610_zap.mdt ]; then
-	echo "build.sh: ../fw-gpu has neither a660_gmu.bin (redwood) nor a610_zap.mdt (citrus): gpu=1 will not start the GPU"
+	echo "build.sh: ../fw-gpu has neither a660_gmu.bin (redwood) nor a610_zap.mdt (citrus): gpu=1 will not start on any phone"
+fi
+if [ -f ../fw-gpu/a660_gmu.bin ]; then
+	echo "build.sh: ../fw-gpu has a660_gmu.bin: redwood GPU set"
+fi
+if [ -f ../fw-gpu/a610_zap.mdt ] && [ -f ../fw-gpu/a630_sqe.fw ]; then
+	echo "build.sh: ../fw-gpu has a610_zap.mdt and a630_sqe.fw: citrus GPU set"
 fi
 # ... and the image of the Wi-Fi DSP, from /vendor/firmware_mnt/image of the same Android into ../fw-wifi
 # (bsd/dev/redwood_wifi.c; 7.6 MB), with what the radio's firmware is sent once it runs: this phone's
