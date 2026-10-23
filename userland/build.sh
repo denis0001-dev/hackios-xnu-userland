@@ -543,10 +543,21 @@ if [ -d $IOS/rootfs/usr/lib ]; then
 	[ -n "$IOS_JOBS" ] && OSLOG=${OSLOG-com.apple.backboardd} ./mkjobs.py ${REST:+--rest} $VOLUME $IOS/rootfs root/LaunchDaemons $IOS_JOBS
 fi
 # firmware of the phone's own hardware, where somebody has pulled it from the phone's Android into ../fw-gpu
-# (it is the vendor's and never in the repository): the kernel's GPU bring-up, bsd/dev/redwood_adreno.c, finds it in fw/
+# (it is the vendor's and never in the repository): the kernel's GPU bring-up, bsd/dev/redwood_adreno.c
+# (Adreno 642L) or bsd/dev/citrus_adreno.c (Adreno 610), finds it in fw/
 if [ -d ../fw-gpu ]; then
 	mkdir -p root/fw
 	cp ../fw-gpu/* root/fw/
+fi
+# A missing piece is otherwise silent until the phone. Citrus: a610_zap.mdt without a630_sqe.fw
+# (a630_sqe.fw is not on the POCO M3's vendor image). Either phone: neither a660_gmu.bin nor
+# a610_zap.mdt means gpu=1 will not start.
+if [ -f ../fw-gpu/a610_zap.mdt ] && [ ! -f ../fw-gpu/a630_sqe.fw ]; then
+	echo "build.sh: citrus GPU firmware is incomplete: ../fw-gpu has a610_zap.mdt but no a630_sqe.fw"
+	echo "build.sh: gpu=1 on citrus needs both; a630_sqe.fw is not on the phone's /vendor/firmware (linux-firmware qcom/a630_sqe.fw)"
+fi
+if [ ! -f ../fw-gpu/a660_gmu.bin ] && [ ! -f ../fw-gpu/a610_zap.mdt ]; then
+	echo "build.sh: ../fw-gpu has neither a660_gmu.bin (redwood) nor a610_zap.mdt (citrus): gpu=1 will not start the GPU"
 fi
 # ... and the image of the Wi-Fi DSP, from /vendor/firmware_mnt/image of the same Android into ../fw-wifi
 # (bsd/dev/redwood_wifi.c; 7.6 MB), with what the radio's firmware is sent once it runs: this phone's
@@ -596,9 +607,10 @@ if [ -n "$ADSP" ] && [ -f ../fw-audio/adsp.mdt ]; then
 fi
 # Firmware that is not there is otherwise silent at build time and speaks only much later, deep in a
 # device log -- "adreno: THE GPU IS NOT STARTED: the small image has no fw/a660_gmu.bin" cost a phone
-# slot on 19 October 2026. It is the vendor's and never in the repository, so a copy made with bare
-# git worktree add has none of it, and neither has one whose tools/new-workspace.sh predates the fw-*
-# loop there. Say what went in and what was not there to go in; what each one is for is above.
+# slot on 19 October 2026. Citrus is the same with fw/a610_zap.mdt or a630_sqe.fw. It is the vendor's
+# and never in the repository, so a copy made with bare git worktree add has none of it, and neither
+# has one whose tools/new-workspace.sh predates the fw-* loop there. Say what went in and what was
+# not there to go in; what each one is for is above.
 fwhave= fwnone=
 for d in gpu wifi haptic camera audio; do
 	if [ -d ../fw-$d ]; then fwhave="$fwhave $d"; else fwnone="$fwnone $d"; fi
